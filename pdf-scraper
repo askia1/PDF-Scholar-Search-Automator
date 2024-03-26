@@ -1,0 +1,22 @@
+import PyPDF2
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+
+# Open and read PDF file
+PDFfile = open("LadopedBi22122.pdf", "rb")
+pdfread = PyPDF2.PdfFileReader(PDFfile)
+
+# Extract text from PDF
+text = ""
+for i in range(pdfread.getNumPages()):
+    text += pdfread.getPage(i).extractText()
+
+# Setup WebDriver (update path to your ChromeDriver)
+driver = webdriver.Chrome('/path/to/chromedriver')
+driver.get('https://scholar.google.com/')
+
+# Find the search box and input extracted text
+inputElems = driver.find_elements_by_css_selector('input[name=q]')
+for inputElem in inputElems:
+    inputElem.send_keys('Effect of Elastic Stress on the Resistivity and Tc of (Bi, Pb)2Sr2Can-1CunOx')
+    inputElem.send_keys(Keys.ENTER)
