@@ -1,22 +1,49 @@
 import PyPDF2
 from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import time
 
-# Open and read PDF file
-PDFfile = open("LadopedBi22122.pdf", "rb")
-pdfread = PyPDF2.PdfFileReader(PDFfile)
+# === Step 1: Extract title from PDF ===
+with open("LadopedBi22122.pdf", "rb") as PDFfile:
+    pdfread = PyPDF2.PdfFileReader(PDFfile)
+    text = ""
+    for i in range(pdfread.getNumPages()):
+        text += pdfread.getPage(i).extract_text()  # updated API if using newer PyPDF2
 
-# Extract text from PDF
-text = ""
-for i in range(pdfread.getNumPages()):
-    text += pdfread.getPage(i).extractText()
+# Optional: Strip to first line or guess title heuristically
+lines = text.strip().split("\n")
+query = lines[0] if lines else "High Tc Superconductors"
 
-# Setup WebDriver (update path to your ChromeDriver)
-driver = webdriver.Chrome('/path/to/chromedriver')
-driver.get('https://scholar.google.com/')
+# === Step 2: Configure Selenium WebDriver ===
+chrome_options = Options()
+chrome_options.add_argument("--headless")  # Run without UI
+chrome_options.add_argument("--disable-gpu")
+chrome_options.add_argument("--window-size=1920x1080")
 
-# Find the search box and input extracted text
-inputElems = driver.find_elements_by_css_selector('input[name=q]')
-for inputElem in inputElems:
-    inputElem.send_keys('Effect of Elastic Stress on the Resistivity and Tc of (Bi, Pb)2Sr2Can-1CunOx')
-    inputElem.send_keys(Keys.ENTER)
+service = Service("/path/to/chromedriver")  # UPDATE THIS
+driver = webdriver.Chrome(service=service, options=chrome_options)
+
+# === Step 3: Open Google Scholar and search ===
+driver.get("https://scholar.google.com/")
+time.sleep(2)  # wait for page load
+
+search_box = driver.find_element(By.NAME, "q")
+search_box.send_keys(query)
+search_box.send_keys(Keys.RETURN)
+
+# === Step 4: Optional - capture result titles ===
+time.sleep(2)  # wait for results
+results = driver.find_elements(By.CLASS_NAME, "gs_rt")
+
+print("Top Results:")
+for r in results[:3]:  # show top 3 results
+    try:
+        print("-", r.text)
+    except:
+        continue
+
+# Cleanup
+driver.quit()
